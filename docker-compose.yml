@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: sleep_dw
+    volumes:
+      - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  airflow:
+    build: .
+    image: etl-sleephealth-airflow:latest
+    depends_on:
+      - postgres
+    environment:
+      - AIRFLOW__CORE__EXECUTOR=LocalExecutor
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres/sleep_dw
+      - AIRFLOW__CORE__FERNET_KEY=CHANGE_ME_FERNET_KEY
+      - AIRFLOW__CORE__LOAD_EXAMPLES=False
+      - PG_HOST=postgres
+      - PG_PORT=5432
+      - PG_DB=sleep_dw
+      - PG_USER=airflow
+      - PG_PASSWORD=airflow
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./scripts:/opt/airflow/scripts
+      - ./data:/opt/airflow/data
+      - ./logs:/opt/airflow/logs
+    ports:
+      - "8080:8080"
+    command: bash -c "airflow db init && airflow users create --username admin --password admin --firstname Admin --lastname User --role Admin --email admin@example.com || true; airflow scheduler & airflow webserver"
+
+volumes:
+  pgdata:

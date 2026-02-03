@@ -1,0 +1,1 @@
+raise SystemExit('Deprecated: scripts package initializer moved to scripts/deprecated')
